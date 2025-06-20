@@ -99,24 +99,39 @@ jobs:
                     name, ext = os.path.splitext(original_filename)
                     if not ext:
                         ext = '.jpg'
-                    new_filename = f"{row['sku']}_{i+1}{ext}"
+                    new_filename = f"{product['sku']}_{i+1}{ext}"
                     
-                    # Download image
+                    # Download image with better headers
                     print(f"Downloading {url}")
-                    response = requests.get(url, timeout=30)
+                    headers = {
+                        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+                    }
+                    response = requests.get(url, timeout=30, headers=headers, allow_redirects=True)
                     response.raise_for_status()
                     
+                    # Check if response contains image data
+                    if len(response.content) < 100:
+                        print(f"Warning: Very small file downloaded for {url}")
+                        continue
+                        
                     # Save image
                     image_path = f"images/{new_filename}"
                     with open(image_path, 'wb') as f:
                         f.write(response.content)
                     
-                    product['images'].append(new_filename)
-                    print(f"Saved: {new_filename}")
+                    # Verify file was saved
+                    if os.path.exists(image_path) and os.path.getsize(image_path) > 0:
+                        product['images'].append(new_filename)
+                        print(f"Successfully saved: {new_filename} ({len(response.content)} bytes)")
+                    else:
+                        print(f"Failed to save: {new_filename}")
                     
                     # Small delay to be respectful
-                    time.sleep(0.5)
+                    time.sleep(1)
                     
+                except requests.exceptions.RequestException as e:
+                    print(f"Network error downloading {url}: {e}")
+                    continue
                 except Exception as e:
                     print(f"Error downloading {url}: {e}")
                     continue
@@ -201,6 +216,10 @@ jobs:
                     position: relative;
                     height: 250px;
                     overflow: hidden;
+                    background: #f5f5f5;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
                 }
                 
                 .product-image {
@@ -212,6 +231,12 @@ jobs:
                 
                 .product-image.active {
                     display: block;
+                }
+                
+                .no-image {
+                    color: #999;
+                    font-size: 1.1rem;
+                    text-align: center;
                 }
                 
                 .image-nav {
@@ -318,31 +343,33 @@ jobs:
         '''
         
         for product in updated_products:
-            if not product['images']:
-                continue
-                
             html_content += f'''
                     <div class="product-card">
                         <div class="product-images">
             '''
             
-            for i, image in enumerate(product['images']):
-                active_class = 'active' if i == 0 else ''
-                html_content += f'''
-                            <img src="images/{image}" alt="{product['name']}" class="product-image {active_class}">
-                '''
-            
-            if len(product['images']) > 1:
-                html_content += '''
-                            <div class="image-nav">
-                '''
-                for i in range(len(product['images'])):
+            if product['images']:
+                for i, image in enumerate(product['images']):
                     active_class = 'active' if i == 0 else ''
                     html_content += f'''
-                                <div class="nav-dot {active_class}" onclick="showImage(this, {i})"></div>
+                            <img src="images/{image}" alt="{product['name']}" class="product-image {active_class}" onerror="this.style.display='none'">
                     '''
-                html_content += '''
+                
+                if len(product['images']) > 1:
+                    html_content += '''
+                            <div class="image-nav">
+                    '''
+                    for i in range(len(product['images'])):
+                        active_class = 'active' if i == 0 else ''
+                        html_content += f'''
+                                <div class="nav-dot {active_class}" onclick="showImage(this, {i})"></div>
+                        '''
+                    html_content += '''
                             </div>
+                    '''
+            else:
+                html_content += '''
+                            <div class="no-image">No Image Available</div>
                 '''
             
             html_content += f'''
@@ -388,8 +415,21 @@ jobs:
         with open('docs/index.html', 'w', encoding='utf-8') as f:
             f.write(html_content)
         
+        # Copy images to docs folder for Pages deployment
+        import shutil
+        docs_images_dir = 'docs/images'
+        os.makedirs(docs_images_dir, exist_ok=True)
+        
+        # Copy all downloaded images to docs/images
+        if os.path.exists('images'):
+            for filename in os.listdir('images'):
+                if filename.lower().endswith(('.jpg', '.jpeg', '.png', '.gif', '.webp')):
+                    shutil.copy2(f'images/{filename}', f'docs/images/{filename}')
+                    print(f"Copied to docs: {filename}")
+        
         print(f"Generated catalog with {len(updated_products)} products")
         print("HTML catalog saved to docs/index.html")
+        print(f"Images copied to docs/images/ folder")
         
         EOF
         
