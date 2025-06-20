@@ -39,25 +39,49 @@ jobs:
         try:
             df = pd.read_csv('products.csv')
             print(f"Loaded {len(df)} products")
+            print(f"Columns found: {list(df.columns)}")
         except Exception as e:
             print(f"Error reading CSV: {e}")
             exit(1)
+        
+        # Auto-detect column names (flexible mapping)
+        column_mapping = {}
+        for col in df.columns:
+            col_lower = col.lower().strip()
+            if 'sku' in col_lower or 'id' in col_lower:
+                column_mapping['sku'] = col
+            elif 'name' in col_lower or 'title' in col_lower:
+                column_mapping['name'] = col
+            elif 'description' in col_lower or 'desc' in col_lower:
+                column_mapping['description'] = col
+            elif 'price' in col_lower:
+                column_mapping['price'] = col
+            elif 'inventory' in col_lower or 'stock' in col_lower or 'quantity' in col_lower:
+                column_mapping['inventory'] = col
+            elif 'image' in col_lower or 'photo' in col_lower or 'picture' in col_lower:
+                column_mapping['image_urls'] = col
+        
+        print(f"Column mapping: {column_mapping}")
         
         # Download images
         updated_products = []
         
         for index, row in df.iterrows():
             product = {
-                'sku': row['sku'],
-                'name': row['name'],
-                'description': row.get('description', ''),
-                'price': row.get('price', ''),
-                'inventory': row.get('inventory', ''),
+                'sku': row.get(column_mapping.get('sku', ''), f'ITEM_{index+1}'),
+                'name': row.get(column_mapping.get('name', ''), 'Unnamed Product'),
+                'description': row.get(column_mapping.get('description', ''), ''),
+                'price': row.get(column_mapping.get('price', ''), ''),
+                'inventory': row.get(column_mapping.get('inventory', ''), ''),
                 'images': []
             }
             
             # Handle multiple image URLs
-            image_urls = str(row['image_urls']).split(',') if pd.notna(row['image_urls']) else []
+            image_col = column_mapping.get('image_urls', '')
+            if image_col and image_col in row and pd.notna(row[image_col]):
+                image_urls = str(row[image_col]).split(',')
+            else:
+                image_urls = []
             
             for i, url in enumerate(image_urls):
                 url = url.strip()
