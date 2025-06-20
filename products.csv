@@ -1,4 +1,4 @@
-﻿sku,name,price,quantity,image
+﻿sku,name,price,inventory,image_urls
 13013,T-Shirt,4.54,5,"https://cdn.shopify.com/s/files/1/0741/5830/9667/files/637279958606340217-13013_SSP_342.jpg?v=1696442332, https://cdn.shopify.com/s/files/1/0741/5830/9667/files/637279958611965200-SSP_344.jpg?v=1696442338"
 13110,T-Shirt,4.84,4,"https://cdn.shopify.com/s/files/1/0741/5830/9667/files/637203017957229865-13110_SSP_360.jpg?v=1696442391, https://cdn.shopify.com/s/files/1/0741/5830/9667/files/637203017980823686-SSP_370.jpg?v=1696442398"
 13112,T-Shirt,4.84,4,"https://cdn.shopify.com/s/files/1/0741/5830/9667/files/637287719147745165-13112_SSP_328.jpg?v=1696442415, https://cdn.shopify.com/s/files/1/0741/5830/9667/files/637287719153995379-SSP_334.jpg?v=1696442419"
