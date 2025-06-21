@@ -379,7 +379,7 @@ jobs:
                             <div class="product-sku">SKU: {product['sku']}</div>
                             <div class="product-description">{product['description']}</div>
                             <div class="product-details">
-                                <div class="product-price">${product['price']}</div>
+                                <div class="product-price">JOD{product['price']}</div>
                                 <div class="product-inventory">{product['inventory']} in stock</div>
                             </div>
                         </div>
