@@ -74,8 +74,13 @@ jobs:
             }
             .grid {
               display: grid;
-              grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+              grid-template-columns: repeat(4, 1fr);
               gap: 20px;
+            }
+            @media (max-width: 768px) {
+              .grid {
+                grid-template-columns: repeat(2, 1fr);
+              }
             }
             .card {
               background: white;
@@ -100,11 +105,18 @@ jobs:
               font-weight: bold;
               font-size: 1rem;
               color: #333;
+              margin-bottom: 4px;
+            }
+            .sku {
+              font-size: 0.85rem;
+              color: #888;
+              margin-bottom: 4px;
             }
             .price {
               color: #00704A;
               font-weight: bold;
               font-size: 0.95rem;
+              margin-bottom: 2px;
             }
             .stock {
               font-size: 0.85rem;
@@ -150,7 +162,7 @@ jobs:
         <body>
           <header>
             <img src="logo.png" alt="Logo">
-            <h1>IdilBaby Bulk Inventory</h1>
+            <h1>IdilBaby Mamino Products</h1>
           </header>
 
           <div class="search">
@@ -175,6 +187,7 @@ jobs:
               <img src="{image}" alt="{name}">
               <div class="card-body">
                 <div class="name">{name}</div>
+                <div class="sku">SKU: {sku}</div>
                 <div class="price">{price} JOD</div>
                 <div class="stock">{stock} in stock</div>
               </div>
@@ -204,7 +217,7 @@ jobs:
               query = query.toLowerCase();
               cards.forEach(card => {
                 const name = card.querySelector('.name').innerText.toLowerCase();
-                const sku = card.innerHTML.toLowerCase();
+                const sku = card.querySelector('.sku').innerText.toLowerCase();
                 card.style.display = (name.includes(query) || sku.includes(query)) ? 'block' : 'none';
               });
             }
