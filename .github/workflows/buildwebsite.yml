@@ -1,98 +1,152 @@
-html = """
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="UTF-8">
-    <title>IdilBaby Bulk Catalog</title>
-    <style>
-        body {
-            font-family: 'Segoe UI', sans-serif;
-            background: #f7f7f7;
-            margin: 0;
-            padding: 40px 20px;
-        }
-        .container {
-            max-width: 1200px;
-            margin: auto;
-        }
-        h1 {
-            text-align: center;
-            color: #333;
-            margin-bottom: 30px;
-        }
-        .grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-            gap: 20px;
-        }
-        .card {
-            background: white;
-            border-radius: 10px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
-            overflow: hidden;
-            display: flex;
-            flex-direction: column;
-            transition: transform 0.2s;
-        }
-        .card:hover {
-            transform: translateY(-5px);
-        }
-        .card img {
-            width: 100%;
-            height: 250px;
-            object-fit: cover;
-        }
-        .card-body {
-            padding: 15px;
-        }
-        .name {
-            font-size: 1.1rem;
-            font-weight: bold;
-            color: #222;
-            margin-bottom: 8px;
-        }
-        .price {
-            color: #00704A;
-            font-weight: bold;
-            margin-bottom: 5px;
-        }
-        .stock {
-            color: #555;
-            font-size: 0.9rem;
-        }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <h1>IdilBaby Bulk Inventory</h1>
-        <div class="grid">
-"""
+name: Build Catalog Website
 
-# loop through products
-for _, row in df.iterrows():
-    sku = str(row["sku"])
-    name = row.get("name", "Unnamed")
-    price = row.get("price", "N/A")
-    stock = row.get("inventory", "N/A")
-    urls = [u.strip() for u in str(row.get("image_urls", "")).split(",") if u.strip()]
-    image = f"images/{sku}_1.jpg" if urls else "https://via.placeholder.com/300"
+on:
+  push:
+    paths:
+      - "products.csv"
+      - "docs/images/**"
+      - ".github/workflows/build-website.yml"
+  workflow_dispatch:
 
-    html += f"""
-            <div class="card">
-                <img src="{image}" alt="{name}">
-                <div class="card-body">
-                    <div class="name">{name}</div>
-                    <div class="price">{price} JOD</div>
-                    <div class="stock">{stock} in stock</div>
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+
+    - name: Install dependencies
+      run: pip install pandas
+
+    - name: Generate index.html
+      run: |
+        python << 'EOF'
+        import pandas as pd
+        from pathlib import Path
+
+        df = pd.read_csv("products.csv")
+        output = Path("docs/index.html")
+
+        html = """
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="UTF-8">
+            <title>IdilBaby Bulk Catalog</title>
+            <style>
+                body {
+                    font-family: 'Segoe UI', sans-serif;
+                    background: #f7f7f7;
+                    margin: 0;
+                    padding: 40px 20px;
+                }
+                .container {
+                    max-width: 1200px;
+                    margin: auto;
+                }
+                h1 {
+                    text-align: center;
+                    color: #333;
+                    margin-bottom: 30px;
+                }
+                .grid {
+                    display: grid;
+                    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+                    gap: 20px;
+                }
+                .card {
+                    background: white;
+                    border-radius: 10px;
+                    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+                    overflow: hidden;
+                    display: flex;
+                    flex-direction: column;
+                    transition: transform 0.2s;
+                }
+                .card:hover {
+                    transform: translateY(-5px);
+                }
+                .card img {
+                    width: 100%;
+                    height: 250px;
+                    object-fit: cover;
+                }
+                .card-body {
+                    padding: 15px;
+                }
+                .name {
+                    font-size: 1.1rem;
+                    font-weight: bold;
+                    color: #222;
+                    margin-bottom: 8px;
+                }
+                .price {
+                    color: #00704A;
+                    font-weight: bold;
+                    margin-bottom: 5px;
+                }
+                .stock {
+                    color: #555;
+                    font-size: 0.9rem;
+                }
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <h1>IdilBaby Bulk Inventory</h1>
+                <div class="grid">
+        """
+
+        for _, row in df.iterrows():
+            sku = str(row["sku"])
+            name = row.get("name", "Unnamed")
+            price = row.get("price", "N/A")
+            stock = row.get("inventory", "N/A")
+            urls = [u.strip() for u in str(row.get("image_urls", "")).split(",") if u.strip()]
+            image = f"images/{sku}_1.jpg" if urls else "https://via.placeholder.com/300"
+
+            html += f"""
+                    <div class="card">
+                        <img src="{image}" alt="{name}">
+                        <div class="card-body">
+                            <div class="name">{name}</div>
+                            <div class="price">{price} JOD</div>
+                            <div class="stock">{stock} in stock</div>
+                        </div>
+                    </div>
+            """
+
+        html += """
                 </div>
             </div>
-    """
+        </body>
+        </html>
+        """
 
-html += """
-        </div>
-    </div>
-</body>
-</html>
-"""
+        output.write_text(html)
+        EOF
 
-output.write_text(html)
+    - name: Upload Pages artifact
+      uses: actions/upload-pages-artifact@v3
+      with:
+        path: docs/
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+    - name: Deploy to GitHub Pages
+      id: deployment
+      uses: actions/deploy-pages@v4
