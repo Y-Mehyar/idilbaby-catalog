@@ -31,8 +31,8 @@ jobs:
         df = pd.read_csv("products.csv")
 
         for idx, row in df.iterrows():
-            sku = str(row.get("Handle", f"IMG{idx}"))
-            urls = str(row.get("Images", "")).split(",")
+            sku = str(row.get("sku", f"IMG{idx}"))
+            urls = str(row.get("image_urls", "")).split(",")
             for i, url in enumerate(urls):
                 url = url.strip()
                 if not url: continue
