@@ -5,6 +5,7 @@ on:
     paths:
       - "products.csv"
       - "docs/images/**"
+      - "docs/logo.png"
       - ".github/workflows/build-website.yml"
   workflow_dispatch:
 
@@ -37,70 +38,126 @@ jobs:
         <!DOCTYPE html>
         <html>
         <head>
-            <meta charset="UTF-8">
-            <title>IdilBaby Bulk Catalog</title>
-            <style>
-                body {
-                    font-family: 'Segoe UI', sans-serif;
-                    background: #f7f7f7;
-                    margin: 0;
-                    padding: 40px 20px;
-                }
-                .container {
-                    max-width: 1200px;
-                    margin: auto;
-                }
-                h1 {
-                    text-align: center;
-                    color: #333;
-                    margin-bottom: 30px;
-                }
-                .grid {
-                    display: grid;
-                    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-                    gap: 20px;
-                }
-                .card {
-                    background: white;
-                    border-radius: 10px;
-                    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
-                    overflow: hidden;
-                    display: flex;
-                    flex-direction: column;
-                    transition: transform 0.2s;
-                }
-                .card:hover {
-                    transform: translateY(-5px);
-                }
-                .card img {
-                    width: 100%;
-                    height: 250px;
-                    object-fit: cover;
-                }
-                .card-body {
-                    padding: 15px;
-                }
-                .name {
-                    font-size: 1.1rem;
-                    font-weight: bold;
-                    color: #222;
-                    margin-bottom: 8px;
-                }
-                .price {
-                    color: #00704A;
-                    font-weight: bold;
-                    margin-bottom: 5px;
-                }
-                .stock {
-                    color: #555;
-                    font-size: 0.9rem;
-                }
-            </style>
+          <meta charset="UTF-8">
+          <title>IdilBaby Catalog</title>
+          <style>
+            body {
+              font-family: 'Segoe UI', sans-serif;
+              margin: 0;
+              background: #f6f6f6;
+              padding: 20px;
+            }
+            header {
+              text-align: center;
+              margin-bottom: 30px;
+            }
+            header img {
+              max-height: 80px;
+              margin-bottom: 10px;
+            }
+            header h1 {
+              margin: 0;
+              font-size: 2rem;
+              color: #444;
+            }
+            .search {
+              text-align: center;
+              margin: 20px 0;
+            }
+            .search input {
+              width: 80%;
+              max-width: 400px;
+              padding: 10px;
+              font-size: 1rem;
+              border-radius: 8px;
+              border: 1px solid #ccc;
+            }
+            .grid {
+              display: grid;
+              grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+              gap: 20px;
+            }
+            .card {
+              background: white;
+              border-radius: 10px;
+              overflow: hidden;
+              box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+              cursor: pointer;
+              transition: transform 0.2s;
+            }
+            .card:hover {
+              transform: translateY(-4px);
+            }
+            .card img {
+              width: 100%;
+              height: 180px;
+              object-fit: cover;
+            }
+            .card-body {
+              padding: 10px;
+            }
+            .name {
+              font-weight: bold;
+              font-size: 1rem;
+              color: #333;
+            }
+            .price {
+              color: #00704A;
+              font-weight: bold;
+              font-size: 0.95rem;
+            }
+            .stock {
+              font-size: 0.85rem;
+              color: #777;
+            }
+            .modal {
+              display: none;
+              position: fixed;
+              z-index: 10;
+              left: 0; top: 0;
+              width: 100%; height: 100%;
+              background: rgba(0, 0, 0, 0.7);
+              justify-content: center;
+              align-items: center;
+            }
+            .modal-content {
+              background: #fff;
+              padding: 20px;
+              max-width: 90%;
+              max-height: 90%;
+              overflow: auto;
+              border-radius: 10px;
+              position: relative;
+            }
+            .modal-content h2 {
+              margin-top: 0;
+            }
+            .modal-content img {
+              width: 100%;
+              max-height: 300px;
+              object-fit: contain;
+              margin-bottom: 10px;
+            }
+            .close {
+              position: absolute;
+              top: 10px; right: 15px;
+              font-size: 20px;
+              cursor: pointer;
+              color: #333;
+            }
+          </style>
         </head>
         <body>
-            <div class="container">
-                <h1>IdilBaby Bulk Inventory</h1>
-                <div class="grid">
+          <header>
+            <img src="logo.png" alt="Logo">
+            <h1>IdilBaby Bulk Inventory</h1>
+          </header>
+
+          <div class="search">
+            <input type="text" placeholder="Search by name or SKU..." oninput="filterProducts(this.value)">
+          </div>
+
+          <div class="grid" id="productGrid">
         """
 
         for _, row in df.iterrows():
@@ -110,21 +167,48 @@ jobs:
             stock = row.get("inventory", "N/A")
             urls = [u.strip() for u in str(row.get("image_urls", "")).split(",") if u.strip()]
             image = f"images/{sku}_1.jpg" if urls else "https://via.placeholder.com/300"
+            modal_id = f"modal_{sku}"
+            all_imgs = "".join([f'<img src="images/{sku}_{i+1}.jpg" alt="{name}">' for i in range(len(urls))])
 
-            html += f"""
-                    <div class="card">
-                        <img src="{image}" alt="{name}">
-                        <div class="card-body">
-                            <div class="name">{name}</div>
-                            <div class="price">{price} JOD</div>
-                            <div class="stock">{stock} in stock</div>
-                        </div>
-                    </div>
-            """
+            html += f'''
+            <div class="card" onclick="showModal('{modal_id}')">
+              <img src="{image}" alt="{name}">
+              <div class="card-body">
+                <div class="name">{name}</div>
+                <div class="price">{price} JOD</div>
+                <div class="stock">{stock} in stock</div>
+              </div>
+            </div>
+
+            <div class="modal" id="{modal_id}">
+              <div class="modal-content">
+                <span class="close" onclick="hideModal('{modal_id}')">&times;</span>
+                <h2>{name}</h2>
+                {all_imgs or "<p>No additional images available.</p>"}
+              </div>
+            </div>
+            '''
 
         html += """
-                </div>
-            </div>
+          </div>
+
+          <script>
+            function showModal(id) {
+              document.getElementById(id).style.display = 'flex';
+            }
+            function hideModal(id) {
+              document.getElementById(id).style.display = 'none';
+            }
+            function filterProducts(query) {
+              const cards = document.querySelectorAll('.card');
+              query = query.toLowerCase();
+              cards.forEach(card => {
+                const name = card.querySelector('.name').innerText.toLowerCase();
+                const sku = card.innerHTML.toLowerCase();
+                card.style.display = (name.includes(query) || sku.includes(query)) ? 'block' : 'none';
+              });
+            }
+          </script>
         </body>
         </html>
         """
